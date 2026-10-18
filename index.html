@@ -47,7 +47,8 @@
 
   /* Mese selector */
   .month-bar{display:flex;align-items:center;justify-content:space-between;margin:4px 0 16px}
-  .month-bar h1{font-size:1.45rem;font-weight:900;margin:0;text-transform:capitalize;letter-spacing:-.01em}
+  .month-bar h1{font-size:1.4rem;font-weight:900;margin:0;letter-spacing:-.01em;text-align:center;flex:1}
+  .month-bar.solo h1{text-align:left}
   .round-btn{width:46px;height:46px;border-radius:50%;border:none;background:rgba(255,255,255,.7);
     font-size:1.4rem;font-weight:800;color:var(--violet);display:grid;place-items:center}
   .round-btn:disabled{opacity:.3}
@@ -109,8 +110,7 @@
   .hist{display:block;width:100%;text-align:left;border:none;background:#fff;border-radius:var(--radius-md);
     padding:16px;margin-bottom:10px}
   .hist-top{display:flex;justify-content:space-between;font-weight:900;font-size:1.05rem}
-  .hist-top span:first-child{text-transform:capitalize}
-  .hist-sub{font-size:.92rem;color:var(--plum-soft);font-weight:600;margin-top:2px}
+    .hist-sub{font-size:.92rem;color:var(--plum-soft);font-weight:600;margin-top:2px}
   .hist-sub.over{color:var(--warn)}
   .hist-cats{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
   .pill{font-size:.82rem;font-weight:700;background:var(--mist);border-radius:999px;padding:4px 10px}
@@ -173,6 +173,8 @@
   .chip[aria-pressed="true"]{border-color:var(--violet);background:var(--lavender)}
   .text-in{width:100%;border:2px solid var(--lilac);background:#fff;border-radius:var(--radius-sm);padding:13px 14px}
   .text-in:focus{outline:none;border-color:var(--violet)}
+  select.text-in{appearance:none;-webkit-appearance:none;font-weight:700;
+    background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%237B5BB8' stroke-width='2.5' fill='none'/%3E%3C/svg%3E") no-repeat right 16px center}
   .err{color:var(--warn);font-weight:700;margin:10px 2px 0;min-height:1.2em;font-size:.95rem}
   .sheet-actions{display:flex;gap:10px;margin-top:14px}
   .sheet-actions .btn{flex:1;padding:16px;font-size:1.05rem;border-radius:var(--radius-md)}
@@ -223,14 +225,14 @@
 
   <!-- STORICO -->
   <section id="view-history" hidden>
-    <div class="month-bar"><h1>Storico</h1></div>
-    <p class="hint">Tocca un mese per rivedere tutte le spese e come sono state classificate.</p>
+    <div class="month-bar solo"><h1>Storico</h1></div>
+    <p class="hint">Tocca un periodo per rivedere tutte le spese e come sono state classificate.</p>
     <div id="histList"></div>
   </section>
 
   <!-- CATEGORIE -->
   <section id="view-cats" hidden>
-    <div class="month-bar"><h1>Categorie</h1></div>
+    <div class="month-bar solo"><h1>Categorie</h1></div>
     <div class="catlist" id="catManage"></div>
     <h2>Aggiungi una categoria</h2>
     <form class="add-cat" id="addCatForm">
@@ -296,7 +298,10 @@
       <input id="budAmt" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-label="Budget in euro">
       <span class="eur">€</span>
     </div>
-    <p class="hint">Quanto vuoi spendere al massimo questo mese. Ogni spesa che registri viene tolta da qui. I mesi successivi partono con lo stesso budget, e puoi cambiarlo quando vuoi.</p>
+    <p class="hint">Quanto vuoi spendere al massimo fino al prossimo stipendio. Ogni spesa che registri viene tolta da qui.</p>
+    <label class="field-label" for="payday">Giorno in cui arriva lo stipendio</label>
+    <select class="text-in" id="payday"><option value="">Scegli il giorno</option></select>
+    <p class="hint" id="paydayHint">Ogni mese, in quel giorno, il budget torna pieno con lo stesso importo. Se scegli 29, 30 o 31, nei mesi più corti torna pieno l'ultimo giorno del mese.</p>
     <p class="err" id="budErr"></p>
     <div class="sheet-actions">
       <button type="button" class="btn ghost" data-close>Annulla</button>
@@ -333,27 +338,94 @@
     try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {}
   };
   let S = load() || { categories: DEFAULT_CATS.slice(), expenses: [], budgets: {} };
-  S.categories ||= DEFAULT_CATS.slice(); S.expenses ||= []; S.budgets ||= {};
+  S.categories ||= DEFAULT_CATS.slice(); S.expenses ||= []; S.budgets ||= {}; S.starts ||= [];
 
   // ---- Utilità ----
   const $ = id => document.getElementById(id);
   const fmt = n => new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(n);
   const pad = n => String(n).padStart(2,'0');
   const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
-  const monthKeyNow = () => todayISO().slice(0,7);
   const monthName = k => { const [y,m] = k.split('-').map(Number); return new Date(y,m-1,1).toLocaleDateString('it-IT',{month:'long',year:'numeric'}); };
-  const shiftMonth = (k,d) => { const [y,m] = k.split('-').map(Number); const t = new Date(y,m-1+d,1); return `${t.getFullYear()}-${pad(t.getMonth()+1)}`; };
   const parseAmt = s => { if (!s) return NaN; s = String(s).trim().replace(/\s|€/g,''); if (s.includes(',')) s = s.replace(/\./g,'').replace(',', '.'); return Math.round(parseFloat(s)*100)/100; };
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-  // Budget del mese: quello impostato, altrimenti l'ultimo impostato prima (ereditato)
+  // ---- Periodi di budget: da uno stipendio al successivo ----
+  // S.payday = giorno del mese in cui arriva lo stipendio (1-31).
+  // S.starts = date di inizio di ogni periodo, in ordine. Ogni periodo dura fino al giorno prima dello stipendio successivo.
+  // Le date di inizio vengono salvate (non ricalcolate): se cambi il giorno dello stipendio, lo storico resta com'era.
+  // Le spese registrate prima di scegliere il giorno restano raggruppate per mese di calendario.
+  const isoOf = (y,m,d) => `${y}-${pad(m)}-${pad(d)}`;
+  const daysIn = (y,m) => new Date(y,m,0).getDate();
+  const paydayIn = (y,m,p) => isoOf(y,m,Math.min(p,daysIn(y,m)));
+  const prevDay = iso => { const [y,m,d] = iso.split('-').map(Number); const t = new Date(y,m-1,d-1); return isoOf(t.getFullYear(),t.getMonth()+1,t.getDate()); };
+  function lastPaydayOnOrBefore(iso,p) {
+    const [y,m] = iso.split('-').map(Number), c = paydayIn(y,m,p);
+    if (c <= iso) return c;
+    const t = new Date(y,m-2,1); return paydayIn(t.getFullYear(),t.getMonth()+1,p);
+  }
+  function nextPaydayAfter(iso,p) {
+    const [y,m] = iso.split('-').map(Number), c = paydayIn(y,m,p);
+    if (c > iso) return c;
+    const t = new Date(y,m,1); return paydayIn(t.getFullYear(),t.getMonth()+1,p);
+  }
+  // Prossimo inizio periodo. Se il giorno dello stipendio è stato cambiato, il nuovo giorno conta solo dopo la data del cambio
+  function nextStartAfter(iso) {
+    let n = nextPaydayAfter(iso, S.payday);
+    if (S.paydayFrom && n <= S.paydayFrom) n = nextPaydayAfter(S.paydayFrom, S.payday);
+    return n;
+  }
+  // Al primo accesso dal giorno dello stipendio in poi apre il nuovo periodo (anche più di uno, se l'app non è stata aperta per mesi)
+  function rollPeriods() {
+    if (!S.payday || !S.starts.length) return false;
+    const t = todayISO(); let changed = false;
+    let n = nextStartAfter(S.starts[S.starts.length-1]);
+    while (n <= t) { S.starts.push(n); changed = true; n = nextStartAfter(n); }
+    if (changed) save();
+    return changed;
+  }
+  const isMonthKey = k => k.length === 7;
+  const periodOf = iso => {
+    if (!S.starts.length || iso < S.starts[0]) return iso.slice(0,7);
+    let k = S.starts[0];
+    for (const st of S.starts) { if (st <= iso) k = st; else break; }
+    return k;
+  };
+  const periodNow = () => periodOf(todayISO());
+  const periodEnd = k => {
+    if (isMonthKey(k)) {
+      const [y,m] = k.split('-').map(Number); const end = isoOf(y,m,daysIn(y,m));
+      return (S.starts.length && S.starts[0] <= end) ? prevDay(S.starts[0]) : end;
+    }
+    const i = S.starts.indexOf(k);
+    return prevDay(S.starts[i+1] || nextStartAfter(k));
+  };
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  const dShort = iso => { const [y,m,d] = iso.split('-').map(Number); return new Date(y,m-1,d).toLocaleDateString('it-IT',{day:'numeric',month:'short'}); };
+  const dLong = iso => { const [y,m,d] = iso.split('-').map(Number); return new Date(y,m-1,d).toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'}); };
+  function periodLabel(k) {
+    const end = periodEnd(k);
+    if (isMonthKey(k)) {
+      const [y,m] = k.split('-').map(Number);
+      return end === isoOf(y,m,daysIn(y,m)) ? cap(monthName(k)) : `${dShort(k+'-01')} – ${dShort(end)} ${y}`;
+    }
+    return k.slice(0,4) === end.slice(0,4) ? `${dShort(k)} – ${dShort(end)} ${end.slice(0,4)}` : `${dShort(k)} ${k.slice(0,4)} – ${dShort(end)} ${end.slice(0,4)}`;
+  }
+  function allPeriods() {
+    const keys = new Set(S.expenses.map(e => periodOf(e.date)));
+    Object.keys(S.budgets).forEach(k => { if (!isMonthKey(k) || !S.starts.length || k + '-01' < S.starts[0]) keys.add(k); });
+    S.starts.forEach(st => keys.add(st));
+    const now = periodNow(); keys.add(now);
+    return [...keys].filter(k => k <= now).sort();
+  }
+
+  // Budget del periodo: quello impostato, altrimenti l'ultimo impostato prima (ereditato)
   const budgetFor = k => {
     if (S.budgets[k] != null) return { value: S.budgets[k], inherited: false };
     const prev = Object.keys(S.budgets).filter(x => x < k).sort().pop();
     return prev ? { value: S.budgets[prev], inherited: true } : null;
   };
-  const expensesOf = k => S.expenses.filter(e => e.date.slice(0,7) === k);
+  const expensesOf = k => S.expenses.filter(e => periodOf(e.date) === k);
   const sum = arr => Math.round(arr.reduce((a,e) => a + e.amount, 0)*100)/100;
   const byCategory = list => {
     const m = new Map();
@@ -365,13 +437,16 @@
     return [...m.values()].sort((a,b) => b.total - a.total);
   };
 
-  let cur = monthKeyNow();
-  let lastToday = monthKeyNow(); // il mese "di oggi" visto l'ultima volta
+  const rolledAtStart = rollPeriods();
+  let cur = periodNow();
+  let lastNow = cur; // il periodo "di oggi" visto l'ultima volta
 
   // ---- Vista Mese ----
   function renderMonth() {
-    $('monthTitle').textContent = monthName(cur);
-    $('nextM').disabled = cur >= monthKeyNow();
+    const periods = allPeriods(), idx = periods.indexOf(cur), isNow = cur === periodNow();
+    $('monthTitle').textContent = periodLabel(cur);
+    $('prevM').disabled = idx <= 0;
+    $('nextM').disabled = isNow || idx < 0;
     const list = expensesOf(cur);
     const spent = sum(list);
     const b = budgetFor(cur);
@@ -398,12 +473,15 @@
         $('jarAmount').textContent = fmt(-left);
         $('jarFill').style.height = '100%';
       }
-      $('jarSub').innerHTML = `Hai speso <b>${fmt(spent)}</b> su <b>${fmt(b.value)}</b>` +
-        (b.inherited ? '<br>Budget uguale al mese precedente' : '');
+      let extra = '';
+      if (isNow && S.payday) extra = `<br>Torna pieno ${dLong(nextStartAfter(S.starts[S.starts.length-1]))}`;
+      else if (isNow) extra = '<br>Tocca «Cambia budget» per scegliere il giorno dello stipendio';
+      else if (b.inherited) extra = '<br>Stesso budget del periodo precedente';
+      $('jarSub').innerHTML = `Hai speso <b>${fmt(spent)}</b> su <b>${fmt(b.value)}</b>` + extra;
       $('budgetBtn').textContent = 'Cambia budget';
     }
 
-    $('totalLabel').textContent = cur === monthKeyNow() ? 'Totale speso finora' : 'Totale speso nel mese';
+    $('totalLabel').textContent = isNow ? 'Totale speso finora' : (isMonthKey(cur) ? 'Totale speso nel mese' : 'Totale speso nel periodo');
     $('totalMonth').textContent = fmt(spent);
 
     // Categorie
@@ -416,7 +494,7 @@
 
     // Lista per giorno
     if (!list.length) {
-      $('expList').innerHTML = `<div class="empty-note">Nessuna spesa in questo mese.<br>Tocca «Aggiungi spesa» per registrare la prima.</div>`;
+      $('expList').innerHTML = `<div class="empty-note">Nessuna spesa in questo periodo.<br>Tocca «Aggiungi spesa» per registrare la prima.</div>`;
       return;
     }
     const sorted = list.slice().sort((a,b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
@@ -437,10 +515,7 @@
 
   // ---- Vista Storico ----
   function renderHistory() {
-    const keys = new Set(S.expenses.map(e => e.date.slice(0,7)));
-    Object.keys(S.budgets).forEach(k => keys.add(k));
-    keys.add(monthKeyNow());
-    const sorted = [...keys].filter(k => k <= monthKeyNow()).sort().reverse();
+    const sorted = allPeriods().reverse();
     $('histList').innerHTML = sorted.map(k => {
       const list = expensesOf(k), spent = sum(list), b = budgetFor(k);
       let sub = `${list.length} ${list.length===1?'spesa':'spese'}`, over = false;
@@ -449,7 +524,7 @@
         sub += over ? `, budget superato di ${fmt(-left)}` : `, avanzati ${fmt(left)} su ${fmt(b.value)}`;
       }
       const pills = byCategory(list).slice(0,5).map(c => `<span class="pill">${esc(c.icon)} ${esc(c.name)} ${fmt(c.total)}</span>`).join('');
-      return `<button class="hist" data-month="${k}"><div class="hist-top"><span>${monthName(k)}</span><span>${fmt(spent)}</span></div>
+      return `<button class="hist" data-month="${k}"><div class="hist-top"><span>${periodLabel(k)}</span><span>${fmt(spent)}</span></div>
         <div class="hist-sub${over?' over':''}">${sub}</div>${pills ? `<div class="hist-cats">${pills}</div>` : ''}</button>`;
     }).join('');
   }
@@ -484,8 +559,8 @@
   $('fab').onclick = () => {
     selCat = null; renderChips(null);
     $('amt').value = ''; $('note').value = ''; $('expErr').textContent = '';
-    // se stai guardando un mese passato, la data proposta cade in quel mese
-    $('date').value = cur === monthKeyNow() ? todayISO() : cur + '-01';
+    // se stai guardando un periodo passato, la data proposta cade in quel periodo
+    $('date').value = cur === periodNow() ? todayISO() : (isMonthKey(cur) ? cur + '-01' : cur);
     $('date').max = todayISO();
     openSheet($('expSheet'));
     setTimeout(() => $('amt').focus(), 320);
@@ -505,15 +580,17 @@
     // Il nome e il simbolo della categoria vengono copiati nella spesa: lo storico resta com'era anche se la categoria cambia
     S.expenses.push({ id: uid(), amount, catId: c.id, catName: c.name, catIcon: c.icon, note: $('note').value.trim(), date, createdAt: Date.now() });
     save(); closeSheet();
-    cur = date.slice(0,7); showView('month'); renderAll();
+    cur = periodOf(date); showView('month'); renderAll();
     toast(`Spesa salvata: ${fmt(amount)}`);
   };
 
+  $('payday').insertAdjacentHTML('beforeend', Array.from({length:31}, (_,i) => `<option value="${i+1}">Il ${i+1} di ogni mese</option>`).join(''));
   $('budgetBtn').onclick = () => {
     const b = budgetFor(cur);
     $('budAmt').value = b ? String(b.value).replace('.', ',') : '';
     $('budErr').textContent = '';
-    $('budSheetTitle').textContent = 'Budget di ' + monthName(cur);
+    $('payday').value = S.payday ? String(S.payday) : '';
+    $('budSheetTitle').textContent = cur === periodNow() ? 'Budget fino al prossimo stipendio' : 'Budget di ' + periodLabel(cur);
     openSheet($('budSheet'));
     setTimeout(() => $('budAmt').focus(), 320);
   };
@@ -521,6 +598,19 @@
     e.preventDefault();
     const v = parseAmt($('budAmt').value);
     if (!(v > 0)) { $('budErr').textContent = 'Scrivi un importo, ad esempio 1200.'; return; }
+    const p = Number($('payday').value);
+    if (!(p >= 1 && p <= 31)) { $('budErr').textContent = 'Scegli il giorno in cui arriva lo stipendio.'; $('payday').focus(); return; }
+    const wasNow = cur === periodNow();
+    if (!S.payday || !S.starts.length) {
+      // prima volta: il periodo in corso parte dall'ultimo stipendio arrivato (oggi compreso)
+      S.payday = p; S.starts = [lastPaydayOnOrBefore(todayISO(), p)]; delete S.paydayFrom;
+    } else if (p !== S.payday) {
+      // cambio del giorno: vale dal prossimo stipendio, il periodo in corso e quelli passati non si toccano
+      S.payday = p; S.paydayFrom = todayISO();
+    }
+    rollPeriods();
+    if (wasNow) cur = periodNow();
+    lastNow = periodNow();
     S.budgets[cur] = v; save(); closeSheet(); renderAll();
     toast('Budget salvato');
   };
@@ -587,7 +677,8 @@
       const d = JSON.parse(await f.text());
       if (!Array.isArray(d.expenses) || !Array.isArray(d.categories)) throw 0;
       if (!confirm('Ripristinando la copia, i dati attuali verranno sostituiti. Continuare?')) return;
-      S = { categories: d.categories, expenses: d.expenses, budgets: d.budgets || {} };
+      S = { categories: d.categories, expenses: d.expenses, budgets: d.budgets || {}, payday: d.payday, paydayFrom: d.paydayFrom, starts: d.starts || [] };
+      rollPeriods(); cur = lastNow = periodNow();
       save(); renderAll(); toast('Copia ripristinata');
     } catch { toast('Questo file non è una copia valida'); }
     e.target.value = '';
@@ -604,19 +695,18 @@
     const b = e.target.closest('[data-month]'); if (!b) return;
     cur = b.dataset.month; renderMonth(); showView('month');
   };
-  $('prevM').onclick = () => { cur = shiftMonth(cur, -1); renderMonth(); };
-  $('nextM').onclick = () => { if (cur < monthKeyNow()) { cur = shiftMonth(cur, 1); renderMonth(); } };
+  $('prevM').onclick = () => { const ps = allPeriods(), i = ps.indexOf(cur); if (i > 0) { cur = ps[i-1]; renderMonth(); } };
+  $('nextM').onclick = () => { const ps = allPeriods(), i = ps.indexOf(cur); if (i >= 0 && i < ps.length-1) { cur = ps[i+1]; renderMonth(); } };
 
-  // ---- Cambio mese automatico ----
-  // Se l'app resta aperta (o in background) a cavallo di fine mese, al rientro
-  // passa da sola al nuovo mese, ma solo se stavi guardando il mese corrente:
-  // se stavi consultando un mese passato, non ti sposta.
+  // ---- Rinnovo automatico al giorno dello stipendio ----
+  // Legge la data dal telefono. Quando l'app torna in primo piano (o una volta al minuto se resta aperta)
+  // controlla se è arrivato il giorno dello stipendio: se sì apre il nuovo periodo.
+  // Ti sposta sul nuovo periodo solo se stavi guardando quello in corso.
   function checkMonthChange() {
-    const now = monthKeyNow();
-    if (now === lastToday) return;
-    if (cur === lastToday) cur = now;
-    lastToday = now;
-    renderAll();
+    const rolled = rollPeriods();
+    const now = periodNow();
+    if (now !== lastNow) { if (cur === lastNow) cur = now; lastNow = now; renderAll(); }
+    if (rolled) toast('È il giorno dello stipendio: budget di nuovo pieno');
   }
   document.addEventListener('visibilitychange', () => { if (!document.hidden) checkMonthChange(); });
   window.addEventListener('focus', checkMonthChange);
@@ -624,6 +714,7 @@
   setInterval(checkMonthChange, 60000);
 
   renderAll();
+  if (rolledAtStart) toast('È il giorno dello stipendio: budget di nuovo pieno');
 
   // Registrazione dell'app installabile (attiva solo quando è online, in https)
   if ('serviceWorker' in navigator && location.protocol === 'https:') {

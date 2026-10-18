@@ -64,7 +64,8 @@
     background:radial-gradient(ellipse at 50% 100%,#D9C7F1 60%,transparent 62%);
     background-size:90px 28px;background-repeat:repeat-x}
   .jar.empty .jar-fill,.jar.drained .jar-fill{display:none}
-  .jar.over .jar-fill{background:linear-gradient(180deg,#F1C9DD,#E3A3C4)}
+  .jar.over .jar-fill{display:none}
+  .jar.over .jar-amount{color:var(--warn)}
   .jar-content{position:relative;z-index:1}
   .jar-label{font-weight:700;color:var(--plum-soft);margin:0}
   .jar-amount{font-size:2.9rem;font-weight:900;line-height:1.05;margin:4px 0 6px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
@@ -78,6 +79,7 @@
   .total-strip{display:flex;justify-content:space-between;align-items:baseline;
     margin:16px 4px 6px;font-weight:700;color:var(--plum-soft)}
   .total-strip strong{font-size:1.5rem;font-weight:900;color:var(--plum);font-variant-numeric:tabular-nums}
+  .wealth-strip strong{font-size:1.15rem;color:var(--violet)}
 
   h2{font-size:1.15rem;font-weight:900;margin:26px 4px 10px}
 
@@ -182,9 +184,37 @@
   /* Avviso in basso */
   .toast{position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom));transform:translate(-50%,20px);
     background:var(--plum);color:#fff;border-radius:999px;padding:12px 14px 12px 20px;font-weight:700;
-    display:flex;gap:12px;align-items:center;z-index:60;opacity:0;pointer-events:none;transition:all .25s;white-space:nowrap}
+    display:flex;gap:12px;align-items:center;z-index:60;opacity:0;pointer-events:none;transition:all .25s;
+    width:max-content;max-width:calc(100% - 32px);border-radius:22px;line-height:1.3}
+  .toast button{flex:none}
   .toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
   .toast button{border:none;background:var(--lilac);color:var(--plum);border-radius:999px;padding:6px 12px;font-weight:900}
+
+  /* Patrimonio */
+  .w-card{border-radius:var(--radius-lg);padding:22px;color:#fff;
+    background:linear-gradient(150deg,#A68AD9 0%,#7B5BB8 55%,#5B4192 100%);
+    box-shadow:0 18px 40px -22px rgba(91,58,150,.75)}
+  .w-label{margin:0;font-weight:700;opacity:.88}
+  .w-amount{font-size:2.9rem;font-weight:900;line-height:1.05;margin:4px 0 8px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .w-amount.small{font-size:1.7rem}
+  .w-sub{margin:0;font-weight:600;opacity:.92}
+  .w-btn{margin-top:16px;border:none;border-radius:999px;padding:10px 18px;background:rgba(255,255,255,.92);
+    font-weight:800;color:var(--violet);font-size:.95rem}
+  .verdict{background:#fff;border-radius:var(--radius-md);padding:16px 18px;margin-top:14px;border:2px solid var(--lilac)}
+  .verdict.over{border-color:#E7B3CD;background:#FDF5F9}
+  .verdict p{margin:0}
+  .verdict .v-when{font-size:.9rem;font-weight:700;color:var(--plum-soft)}
+  .verdict .v-main{font-size:1.25rem;font-weight:900;margin:2px 0}
+  .verdict.over .v-main{color:var(--warn)}
+  .verdict .v-det{font-size:.92rem;font-weight:600;color:var(--plum-soft)}
+  .prow{background:#fff;border-radius:var(--radius-md);padding:14px 16px;margin-bottom:10px}
+  .prow-top{display:flex;justify-content:space-between;gap:8px;font-weight:900}
+  .res{font-weight:800;color:var(--violet);margin-top:2px}
+  .res.over{color:var(--warn)}
+  .line{display:flex;justify-content:space-between;align-items:center;font-size:.92rem;color:var(--plum-soft);font-weight:600;margin-top:6px}
+  .line b{color:var(--plum);font-variant-numeric:tabular-nums}
+  .mini.on{background:var(--violet);color:#fff}
+  .mini{border:none;background:var(--lavender);color:var(--violet);border-radius:999px;padding:3px 10px;font-weight:800;font-size:.8rem;margin-left:6px}
 
   [hidden]{display:none!important}
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -211,9 +241,9 @@
       </div>
     </div>
 
-    <div class="total-strip">
-      <span id="totalLabel">Totale speso nel mese</span>
-      <strong id="totalMonth"></strong>
+    <div class="total-strip wealth-strip" id="wealthStrip" hidden>
+      <span>Patrimonio oggi</span>
+      <strong id="wealthMonth"></strong>
     </div>
 
     <h2>Dove sono andati i soldi</h2>
@@ -221,6 +251,12 @@
 
     <h2>Spese registrate</h2>
     <div id="expList"></div>
+  </section>
+
+  <!-- PATRIMONIO -->
+  <section id="view-wealth" hidden>
+    <div class="month-bar solo"><h1>Il mio patrimonio</h1></div>
+    <div id="wealthBody"></div>
   </section>
 
   <!-- STORICO -->
@@ -259,6 +295,7 @@
 <nav class="tabs" role="tablist">
   <div class="tabs-inner">
     <button class="tab" role="tab" aria-selected="true" data-view="month"><span class="ti">🗓️</span>Mese</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="wealth"><span class="ti">💰</span>Patrimonio</button>
     <button class="tab" role="tab" aria-selected="false" data-view="history"><span class="ti">📚</span>Storico</button>
     <button class="tab" role="tab" aria-selected="false" data-view="cats"><span class="ti">🏷️</span>Categorie</button>
   </div>
@@ -298,14 +335,58 @@
       <input id="budAmt" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-label="Budget in euro">
       <span class="eur">€</span>
     </div>
-    <p class="hint">Quanto vuoi spendere al massimo fino al prossimo stipendio. Ogni spesa che registri viene tolta da qui.</p>
+    <p class="hint">Quanto vuoi spendere al massimo fino al prossimo stipendio. Ogni spesa che registri viene tolta da qui. A ogni stipendio riparte da questa cifra: quello che avanza non si somma al budget, resta nel patrimonio.</p>
     <label class="field-label" for="payday">Giorno in cui arriva lo stipendio</label>
     <select class="text-in" id="payday"><option value="">Scegli il giorno</option></select>
     <p class="hint" id="paydayHint">Ogni mese, in quel giorno, il budget torna pieno con lo stesso importo. Se scegli 29, 30 o 31, nei mesi più corti torna pieno l'ultimo giorno del mese.</p>
+    <p class="hint" id="budSuggest" hidden></p>
     <p class="err" id="budErr"></p>
     <div class="sheet-actions">
       <button type="button" class="btn ghost" data-close>Annulla</button>
       <button type="submit" class="btn">Salva budget</button>
+    </div>
+  </form>
+</div>
+
+<!-- Foglio: patrimonio -->
+<div class="sheet" id="wSheet" role="dialog" aria-modal="true" aria-labelledby="wSheetTitle">
+  <div class="grip"></div>
+  <h3 id="wSheetTitle">Il mio patrimonio</h3>
+  <form id="wForm" novalidate>
+    <label class="field-label" for="wStart" style="margin-top:0">Quanto hai oggi</label>
+    <div class="amount-wrap">
+      <input id="wStart" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-label="Patrimonio di oggi in euro">
+      <span class="eur">€</span>
+    </div>
+    <p class="hint" id="wStartHint">Per esempio il saldo del conto, con l'ultimo stipendio già compreso. Da qui in poi ogni spesa viene tolta e ogni stipendio aggiunto.</p>
+    <label class="field-label" for="wSalary" id="wSalaryLabel">Stipendio netto</label>
+    <div class="amount-wrap">
+      <input id="wSalary" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-label="Stipendio in euro">
+      <span class="eur">€</span>
+    </div>
+    <p class="hint" id="wSalaryHint">Ogni mese, il giorno dello stipendio, ti chiedo quanto è arrivato e lo aggiungo al patrimonio. Questa cifra è solo la proposta di partenza.</p>
+    <p class="err" id="wErr"></p>
+    <div class="sheet-actions">
+      <button type="button" class="btn ghost" data-close>Annulla</button>
+      <button type="submit" class="btn">Salva</button>
+    </div>
+  </form>
+</div>
+
+<!-- Foglio: stipendio di un periodo -->
+<div class="sheet" id="salSheet" role="dialog" aria-modal="true" aria-labelledby="salSheetTitle">
+  <div class="grip"></div>
+  <h3 id="salSheetTitle">Stipendio del periodo</h3>
+  <form id="salForm" novalidate>
+    <div class="amount-wrap">
+      <input id="salAmt" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-label="Stipendio del periodo in euro">
+      <span class="eur">€</span>
+    </div>
+    <p class="hint" id="salHint">Cambia solo questo periodo: gli altri restano come sono.</p>
+    <p class="err" id="salErr"></p>
+    <div class="sheet-actions">
+      <button type="button" class="btn ghost" data-close>Annulla</button>
+      <button type="submit" class="btn">Salva stipendio</button>
     </div>
   </form>
 </div>
@@ -338,7 +419,7 @@
     try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {}
   };
   let S = load() || { categories: DEFAULT_CATS.slice(), expenses: [], budgets: {} };
-  S.categories ||= DEFAULT_CATS.slice(); S.expenses ||= []; S.budgets ||= {}; S.starts ||= [];
+  S.categories ||= DEFAULT_CATS.slice(); S.expenses ||= []; S.budgets ||= {}; S.starts ||= []; S.salaries ||= {}; S.fixed ||= []; S.fixedApplied ||= {};
 
   // ---- Utilità ----
   const $ = id => document.getElementById(id);
@@ -380,7 +461,16 @@
     if (!S.payday || !S.starts.length) return false;
     const t = todayISO(); let changed = false;
     let n = nextStartAfter(S.starts[S.starts.length-1]);
-    while (n <= t) { S.starts.push(n); changed = true; n = nextStartAfter(n); }
+    while (n <= t) {
+      // il periodo che si chiude conserva le spese fisse di quel momento: modifiche future non cambiano lo storico
+      const closing = S.starts[S.starts.length-1];
+      if (S.wealth && closing >= periodOf(S.wealth.since) && S.fixedApplied[closing] == null)
+        S.fixedApplied[closing] = S.fixed.filter(f => f.paidFor !== closing).map(f => ({ ...f }));
+      S.starts.push(n); changed = true;
+      // lo stipendio del nuovo periodo viene fissato ora: se poi cambi la cifra, i periodi passati non cambiano
+      if (S.wealth && n > S.wealth.since && S.salaries[n] == null) S.salaries[n] = S.wealth.salary;
+      n = nextStartAfter(n);
+    }
     if (changed) save();
     return changed;
   }
@@ -437,6 +527,54 @@
     return [...m.values()].sort((a,b) => b.total - a.total);
   };
 
+  // ---- Patrimonio ----
+  // S.wealth = { start, since, sinceTs, salary, adj:[{date,ts,delta}] }
+  // Patrimonio = cifra di partenza + stipendi arrivati dopo + correzioni − spese registrate dopo.
+  const r2 = n => Math.round(n*100)/100;
+  // Conta ogni spesa registrata dopo aver impostato il patrimonio, anche se le dai una data passata
+  const counted = e => !!S.wealth && e.createdAt >= S.wealth.sinceTs;
+  const salaryOf = k => (!S.wealth || isMonthKey(k) || k <= S.wealth.since) ? null : (S.salaries[k] ?? S.wealth.salary);
+  // Spese fisse: tolte dal patrimonio a ogni stipendio, non dal budget.
+  // Il periodo in corso usa l'elenco attuale; i periodi chiusi usano quello conservato alla chiusura.
+  const fixedSum = list => r2(list.reduce((a,f) => a + f.amount, 0));
+  // Valgono anche nel periodo in cui hai impostato il patrimonio. Quelle segnate «già pagata» per il periodo in corso non si tolgono.
+  const fixedOf = k => {
+    if (!S.wealth || k < periodOf(S.wealth.since)) return null;
+    return k === periodNow() ? S.fixed.filter(f => f.paidFor !== k) : (S.fixedApplied[k] || []);
+  };
+  function wealthTimeline() {
+    const w = S.wealth, out = {}; if (!w) return out;
+    const first = periodOf(w.since), delta = {};
+    // una spesa con data precedente al patrimonio viene tolta nel primo periodo del patrimonio
+    const add = (k, x) => { if (k < first) k = first; delta[k] = (delta[k] || 0) + x; };
+    S.expenses.forEach(e => { if (counted(e)) add(periodOf(e.date), -e.amount); });
+    (w.adj || []).forEach(a => add(periodOf(a.date), a.delta));
+    let v = w.start;
+    for (const k of allPeriods()) {
+      if (k < first) continue;
+      const sal = salaryOf(k); if (sal != null) v += sal;
+      v -= fixedSum(fixedOf(k) || []);
+      v += delta[k] || 0;
+      out[k] = r2(v);
+    }
+    return out;
+  }
+  // Di quanto è cambiato il patrimonio in un periodo (stipendio − spese ± correzioni)
+  function wealthChange(k, tl) {
+    const keys = Object.keys(tl).sort(), i = keys.indexOf(k);
+    if (i < 0) return null;
+    return r2(tl[k] - (i === 0 ? S.wealth.start : tl[keys[i-1]]));
+  }
+  const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '') + fmt(Math.abs(n));
+  const wealthNow = () => wealthTimeline()[periodNow()] ?? (S.wealth ? S.wealth.start : 0);
+  function verdictOf(k) {
+    const b = budgetFor(k); if (!b) return null;
+    const left = r2(b.value - sum(expensesOf(k)));
+    return left >= 0
+      ? { over: false, text: `Budget rispettato: avanzati ${fmt(left)}`, short: `hai rispettato il budget e ti sono avanzati ${fmt(left)}` }
+      : { over: true, text: `Budget superato di ${fmt(-left)}`, short: `hai superato il budget di ${fmt(-left)}` };
+  }
+
   const rolledAtStart = rollPeriods();
   let cur = periodNow();
   let lastNow = cur; // il periodo "di oggi" visto l'ultima volta
@@ -457,7 +595,7 @@
       jar.classList.add('empty');
       $('jarLabel').textContent = 'Nessun budget impostato';
       $('jarAmount').textContent = 'Quanto vuoi spendere?';
-      $('jarSub').textContent = 'Imposta un budget e vedrai scendere il livello a ogni spesa.';
+      $('jarSub').innerHTML = (spent ? `Hai speso <b>${fmt(spent)}</b>.<br>` : '') + 'Imposta un budget e vedrai scendere il livello a ogni spesa.';
       $('jarFill').style.height = '0%';
       $('budgetBtn').textContent = 'Imposta il budget';
     } else {
@@ -471,7 +609,7 @@
         jar.classList.add('over');
         $('jarLabel').textContent = 'Budget superato di';
         $('jarAmount').textContent = fmt(-left);
-        $('jarFill').style.height = '100%';
+        $('jarFill').style.height = '0%'; // budget finito: il lilla è tutto scomparso
       }
       let extra = '';
       if (isNow && S.payday) extra = `<br>Torna pieno ${dLong(nextStartAfter(S.starts[S.starts.length-1]))}`;
@@ -481,8 +619,8 @@
       $('budgetBtn').textContent = 'Cambia budget';
     }
 
-    $('totalLabel').textContent = isNow ? 'Totale speso finora' : (isMonthKey(cur) ? 'Totale speso nel mese' : 'Totale speso nel periodo');
-    $('totalMonth').textContent = fmt(spent);
+    $('wealthStrip').hidden = !(S.wealth && isNow);
+    if (S.wealth && isNow) $('wealthMonth').textContent = fmt(wealthNow());
 
     // Categorie
     const cats = byCategory(list);
@@ -511,6 +649,76 @@
         <button class="del" data-del="${e.id}" aria-label="Elimina spesa">✕</button></div>`;
     });
     $('expList').innerHTML = html;
+  }
+
+  // ---- Vista Patrimonio ----
+  function renderWealth() {
+    const el = $('wealthBody');
+    if (!S.payday || !S.starts.length) {
+      el.innerHTML = `<div class="empty-note">Per usare il patrimonio, prima imposta il budget e il giorno dello stipendio dalla scheda Mese.</div>`;
+      return;
+    }
+    const now = periodNow(), periods = allPeriods(), tl = wealthTimeline();
+    const next = nextStartAfter(S.starts[S.starts.length-1]);
+    let html;
+    if (!S.wealth) {
+      html = `<div class="w-card"><p class="w-label">Non ancora impostato</p><p class="w-amount small">Quanto hai oggi?</p>
+        <p class="w-sub">Scrivi da quanto parti e il tuo stipendio. Da lì in poi scende a ogni spesa e sale a ogni stipendio.</p>
+        <button class="w-btn" data-wedit>Imposta il patrimonio</button></div>`;
+    } else {
+      const ch = wealthChange(now, tl) ?? 0;
+      html = `<div class="w-card"><p class="w-label">Hai oggi</p><p class="w-amount">${fmt(wealthNow())}</p>
+        <p class="w-sub">In questo periodo: ${signed(ch)}<br>Il prossimo stipendio arriva ${dLong(next)}: quel giorno ti chiedo quanto è arrivato${S.fixed.length ? ' e tolgo le spese fisse' : ''}</p>
+        <button class="w-btn" data-wedit>Correggi il patrimonio</button></div>`;
+    }
+    // Ultimo periodo chiuso: budget rispettato? e quanto è cambiato il patrimonio?
+    const closed = periods.filter(k => k < now && budgetFor(k));
+    const last = closed[closed.length-1];
+    if (last) {
+      const v = verdictOf(last), ch = S.wealth ? wealthChange(last, tl) : null;
+      html += `<div class="verdict${v.over?' over':''}"><p class="v-when">Ultimo periodo, ${periodLabel(last)}</p>
+        <p class="v-main">${v.over ? '✕' : '✓'} ${v.text}</p>
+        <p class="v-det">Hai speso ${fmt(sum(expensesOf(last)))} su un budget di ${fmt(budgetFor(last).value)}.` +
+        (ch != null ? ` Il patrimonio è ${ch >= 0 ? 'cresciuto di ' + fmt(ch) : 'sceso di ' + fmt(-ch)}.` : '') + `</p></div>`;
+    }
+    // Spese fisse
+    if (S.wealth) {
+      const tot = fixedSum(S.fixed), lastSal = S.salaries[now] ?? S.wealth.salary;
+      html += `<h2>Spese fisse</h2><div class="catlist">` +
+        (S.fixed.length ? S.fixed.map(f => `<div class="catitem"><span style="font-size:1.4rem">${esc(f.icon)}</span><span class="name">${esc(f.name)}<br><button class="mini${f.paidFor === now ? ' on' : ''}" style="margin:4px 0 0" data-paid="${f.id}" aria-pressed="${f.paidFor === now}">${f.paidFor === now ? '✓ Già pagata questo mese' : 'Già pagata questo mese?'}</button></span>
+          <b style="font-variant-numeric:tabular-nums">${fmt(f.amount)}</b>
+          <button class="del" data-delfix="${f.id}" aria-label="Elimina spesa fissa ${esc(f.name)}">✕</button></div>`).join('') +
+          `<div class="catitem"><span class="name">Totale ogni mese</span><b>${fmt(tot)}</b></div>`
+        : `<div class="catitem"><span class="name" style="font-weight:600;color:var(--plum-soft)">Ancora nessuna. Aggiungi affitto, bollette, abbonamenti e rate.</span></div>`) +
+        `</div>
+        <form class="add-cat" id="addFixForm">
+          <input class="name-in" id="fixName" maxlength="24" placeholder="Es. Affitto" aria-label="Nome spesa fissa">
+          <input class="emoji-in" id="fixAmt" inputmode="decimal" placeholder="€" aria-label="Importo mensile" style="width:96px;font-size:1rem">
+          <button class="btn" type="submit">Aggiungi</button>
+        </form>
+        <p class="hint">Quando ne aggiungi una viene tolta subito dal patrimonio di questo mese, poi da sola ogni mese il giorno dello stipendio. Se questo mese l'avevi già pagata, tocca «Già pagata questo mese?» sotto il suo nome. Non toccano il budget e non vanno registrate anche come spese normali, altrimenti le conti due volte.` +
+        (S.fixed.length ? ` Con uno stipendio di ${fmt(lastSal)}, dopo le spese fisse restano ${fmt(r2(lastSal - tot))}: è il massimo sensato per il budget.` : '') + `</p>`;
+    }
+
+    // Elenco dei periodi
+    html += `<h2>Com'è andato ogni periodo</h2>`;
+    html += periods.slice().reverse().map(k => {
+      const isNow = k === now, spent = sum(expensesOf(k)), b = budgetFor(k), sal = salaryOf(k);
+      let res = '';
+      if (b) {
+        const left = r2(b.value - spent);
+        res = isNow ? `<div class="res">In corso: ${left >= 0 ? 'restano ' + fmt(left) : 'budget superato di ' + fmt(-left)}</div>`
+                    : (v => `<div class="res${v.over?' over':''}">${v.text}</div>`)(verdictOf(k));
+      }
+      const ch = S.wealth ? wealthChange(k, tl) : null;
+      return `<div class="prow"><div class="prow-top"><span>${periodLabel(k)}</span></div>${res}
+        ${sal != null ? `<div class="line"><span>Stipendio <button class="mini" data-sal="${k}">Cambia</button></span><b>+${fmt(sal)}</b></div>` : ''}
+        ${(fixedOf(k) || []).length ? `<div class="line"><span>Spese fisse</span><b>−${fmt(fixedSum(fixedOf(k)))}</b></div>` : ''}
+        <div class="line"><span>Spese</span><b>−${fmt(spent)}</b></div>
+        ${ch != null ? `<div class="line"><span>Patrimonio ${isNow ? 'finora' : 'nel periodo'}</span><b>${signed(ch)}</b></div>
+        <div class="line"><span>${isNow ? 'Patrimonio oggi' : 'Patrimonio a fine periodo'}</span><b>${fmt(tl[k])}</b></div>` : ''}</div>`;
+    }).join('');
+    el.innerHTML = html;
   }
 
   // ---- Vista Storico ----
@@ -545,7 +753,7 @@
     ).join('');
   }
 
-  const renderAll = () => { renderMonth(); renderHistory(); renderCats(); };
+  const renderAll = () => { renderMonth(); renderWealth(); renderHistory(); renderCats(); };
 
   // ---- Fogli ----
   let openSheetEl = null;
@@ -581,7 +789,7 @@
     S.expenses.push({ id: uid(), amount, catId: c.id, catName: c.name, catIcon: c.icon, note: $('note').value.trim(), date, createdAt: Date.now() });
     save(); closeSheet();
     cur = periodOf(date); showView('month'); renderAll();
-    toast(`Spesa salvata: ${fmt(amount)}`);
+    toast(S.wealth ? `Spesa salvata: ${fmt(amount)}. Patrimonio: ${fmt(wealthNow())}` : `Spesa salvata: ${fmt(amount)}`);
   };
 
   $('payday').insertAdjacentHTML('beforeend', Array.from({length:31}, (_,i) => `<option value="${i+1}">Il ${i+1} di ogni mese</option>`).join(''));
@@ -590,6 +798,11 @@
     $('budAmt').value = b ? String(b.value).replace('.', ',') : '';
     $('budErr').textContent = '';
     $('payday').value = S.payday ? String(S.payday) : '';
+    if (S.wealth && S.fixed.length) {
+      const sal = S.salaries[periodNow()] ?? S.wealth.salary;
+      $('budSuggest').textContent = `Stipendio ${fmt(sal)} meno spese fisse ${fmt(fixedSum(S.fixed))}: restano ${fmt(r2(sal - fixedSum(S.fixed)))} per il budget e i risparmi.`;
+      $('budSuggest').hidden = false;
+    } else $('budSuggest').hidden = true;
     $('budSheetTitle').textContent = cur === periodNow() ? 'Budget fino al prossimo stipendio' : 'Budget di ' + periodLabel(cur);
     openSheet($('budSheet'));
     setTimeout(() => $('budAmt').focus(), 320);
@@ -617,9 +830,9 @@
 
   // ---- Eliminazioni con annulla ----
   let undoFn = null, toastT = null;
-  function toast(msg, undo) {
+  function toast(msg, undo, label = 'Annulla') {
     $('toastMsg').textContent = msg; undoFn = undo || null;
-    $('toastUndo').hidden = !undo;
+    $('toastUndo').hidden = !undo; $('toastUndo').textContent = label;
     $('toast').classList.add('show');
     clearTimeout(toastT); toastT = setTimeout(() => $('toast').classList.remove('show'), undo ? 5000 : 2200);
   }
@@ -662,6 +875,87 @@
     toast(`«${name}» aggiunta`);
   };
 
+  // ---- Patrimonio: fogli ----
+  const toInput = n => String(n).replace('.', ',');
+  let salKey = null;
+  $('wealthBody').onclick = e => {
+    if (e.target.closest('[data-wedit]')) {
+      $('wErr').textContent = '';
+      $('wStart').value = S.wealth ? toInput(wealthNow()) : '';
+      $('wSalary').value = S.wealth ? toInput(S.wealth.salary) : '';
+      $('wStartHint').textContent = S.wealth
+        ? 'Se non corrisponde al tuo conto, scrivi la cifra giusta: la differenza viene registrata come correzione del saldo.'
+        : "Per esempio il saldo del conto, con l'ultimo stipendio già compreso. Da qui in poi ogni spesa viene tolta e ogni stipendio aggiunto.";
+      ['wSalary','wSalaryLabel','wSalaryHint'].forEach(id => { const n = $(id).closest('.amount-wrap') || $(id); n.hidden = !!S.wealth; });
+      $('wSheetTitle').textContent = S.wealth ? 'Correggi il patrimonio' : 'Il mio patrimonio';
+      openSheet($('wSheet')); setTimeout(() => $('wStart').focus(), 320);
+      return;
+    }
+    const pd = e.target.closest('[data-paid]');
+    if (pd) {
+      const f = S.fixed.find(x => x.id === pd.dataset.paid); if (!f) return;
+      if (f.paidFor === periodNow()) { delete f.paidFor; toast(`«${f.name}» tolta dal patrimonio di questo mese`); }
+      else { f.paidFor = periodNow(); toast(`«${f.name}» segnata come già pagata: questo mese non viene tolta`); }
+      save(); renderAll(); return;
+    }
+    const df = e.target.closest('[data-delfix]');
+    if (df) {
+      const i = S.fixed.findIndex(f => f.id === df.dataset.delfix); if (i < 0) return;
+      const [gone] = S.fixed.splice(i, 1); save(); renderAll();
+      toast(`«${gone.name}» tolta dalle spese fisse`, () => { S.fixed.splice(i, 0, gone); save(); renderAll(); });
+      return;
+    }
+    const b = e.target.closest('[data-sal]');
+    if (b) openSalary(b.dataset.sal, false);
+  };
+  $('wealthBody').addEventListener('submit', e => {
+    if (e.target.id !== 'addFixForm') return;
+    e.preventDefault();
+    const name = $('fixName').value.trim(), amount = parseAmt($('fixAmt').value);
+    if (!name) { $('fixName').focus(); return; }
+    if (!(amount > 0)) { toast("Scrivi l'importo mensile, ad esempio 650"); $('fixAmt').focus(); return; }
+    const low = name.toLowerCase();
+    const icon = /affitt|mutuo|casa|condomin/.test(low) ? '🏠' : /luce|gas|bollett|acqua|enel/.test(low) ? '💡'
+      : /internet|telefon|fibra|cellular|sim/.test(low) ? '📱' : /auto|macchina|assicuraz|bollo/.test(low) ? '🚗'
+      : /palestra/.test(low) ? '🏋️' : /netflix|spotify|abbonam|disney|prime/.test(low) ? '📺' : /rata|prestito|finanziam/.test(low) ? '🏦' : '📌';
+    const item = { id: uid(), name, icon, amount };
+    S.fixed.push(item);
+    save(); renderAll();
+    // di default si toglie subito dal mese in corso; con un tocco la segni come già pagata
+    toast(`«${name}» aggiunta: −${fmt(amount)} dal patrimonio di questo mese`, () => { item.paidFor = periodNow(); save(); renderAll(); }, 'Già pagata');
+  });
+  function openSalary(k, isPayday) {
+    salKey = k; $('salErr').textContent = '';
+    $('salAmt').value = toInput(salaryOf(k));
+    $('salSheetTitle').textContent = isPayday ? 'È arrivato lo stipendio' : 'Stipendio del periodo ' + periodLabel(k);
+    $('salHint').textContent = isPayday
+      ? 'Scrivi quanto ti è arrivato questo mese: viene aggiunto al patrimonio. Ti ho proposto la cifra del mese scorso.' + (S.fixed.length ? ` Le spese fisse (${fmt(fixedSum(S.fixed))}) le ho già tolte.` : '')
+      : 'Cambia solo questo periodo: gli altri restano come sono.';
+    openSheet($('salSheet')); setTimeout(() => $('salAmt').focus(), 320);
+  }
+  $('wForm').onsubmit = e => {
+    e.preventDefault();
+    const start = parseAmt($('wStart').value), salary = parseAmt($('wSalary').value);
+    if (!Number.isFinite(start)) { $('wErr').textContent = 'Scrivi quanto hai oggi, ad esempio 3500.'; return; }
+    if (!S.wealth && !(salary >= 0)) { $('wErr').textContent = 'Scrivi lo stipendio netto, ad esempio 1800.'; return; }
+    if (!S.wealth) {
+      S.wealth = { start, since: todayISO(), sinceTs: Date.now(), salary, adj: [] };
+    } else {
+      const delta = r2(start - wealthNow());
+      if (delta) (S.wealth.adj ||= []).push({ date: todayISO(), ts: Date.now(), delta });
+    }
+    save(); closeSheet(); renderAll(); toast('Patrimonio salvato');
+  };
+  $('salForm').onsubmit = e => {
+    e.preventDefault();
+    const v = parseAmt($('salAmt').value);
+    if (!(v >= 0)) { $('salErr').textContent = 'Scrivi lo stipendio, ad esempio 2400.'; return; }
+    S.salaries[salKey] = v;
+    // l'ultimo stipendio scritto diventa la proposta per il mese successivo
+    if (salKey === S.starts[S.starts.length-1]) S.wealth.salary = v;
+    save(); closeSheet(); renderAll(); toast(`Stipendio salvato. Patrimonio: ${fmt(wealthNow())}`);
+  };
+
   // ---- Copia di sicurezza ----
   $('exportBtn').onclick = () => {
     const blob = new Blob([JSON.stringify(S, null, 1)], { type: 'application/json' });
@@ -677,7 +971,7 @@
       const d = JSON.parse(await f.text());
       if (!Array.isArray(d.expenses) || !Array.isArray(d.categories)) throw 0;
       if (!confirm('Ripristinando la copia, i dati attuali verranno sostituiti. Continuare?')) return;
-      S = { categories: d.categories, expenses: d.expenses, budgets: d.budgets || {}, payday: d.payday, paydayFrom: d.paydayFrom, starts: d.starts || [] };
+      S = { categories: d.categories, expenses: d.expenses, budgets: d.budgets || {}, payday: d.payday, paydayFrom: d.paydayFrom, starts: d.starts || [], wealth: d.wealth, salaries: d.salaries || {}, fixed: d.fixed || [], fixedApplied: d.fixedApplied || {} };
       rollPeriods(); cur = lastNow = periodNow();
       save(); renderAll(); toast('Copia ripristinata');
     } catch { toast('Questo file non è una copia valida'); }
@@ -686,7 +980,7 @@
 
   // ---- Navigazione ----
   function showView(v) {
-    ['month','history','cats'].forEach(x => $('view-' + x).hidden = x !== v);
+    ['month','wealth','history','cats'].forEach(x => $('view-' + x).hidden = x !== v);
     document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', t.dataset.view === v));
     window.scrollTo(0, 0);
   }
@@ -698,6 +992,15 @@
   $('prevM').onclick = () => { const ps = allPeriods(), i = ps.indexOf(cur); if (i > 0) { cur = ps[i-1]; renderMonth(); } };
   $('nextM').onclick = () => { const ps = allPeriods(), i = ps.indexOf(cur); if (i >= 0 && i < ps.length-1) { cur = ps[i+1]; renderMonth(); } };
 
+  // Avviso del giorno di stipendio, con l'esito del periodo appena chiuso
+  function paydayToast() {
+    const prev = S.starts[S.starts.length-2], v = prev && verdictOf(prev);
+    const msg = v ? `Stipendio arrivato. Nel periodo appena chiuso ${v.short}.` : 'È il giorno dello stipendio: budget di nuovo pieno';
+    toast(msg, () => showView('wealth'), 'Vedi');
+    const k = S.starts[S.starts.length-1];
+    if (S.wealth && salaryOf(k) != null) openSalary(k, true);
+  }
+
   // ---- Rinnovo automatico al giorno dello stipendio ----
   // Legge la data dal telefono. Quando l'app torna in primo piano (o una volta al minuto se resta aperta)
   // controlla se è arrivato il giorno dello stipendio: se sì apre il nuovo periodo.
@@ -706,7 +1009,7 @@
     const rolled = rollPeriods();
     const now = periodNow();
     if (now !== lastNow) { if (cur === lastNow) cur = now; lastNow = now; renderAll(); }
-    if (rolled) toast('È il giorno dello stipendio: budget di nuovo pieno');
+    if (rolled) paydayToast();
   }
   document.addEventListener('visibilitychange', () => { if (!document.hidden) checkMonthChange(); });
   window.addEventListener('focus', checkMonthChange);
@@ -714,7 +1017,7 @@
   setInterval(checkMonthChange, 60000);
 
   renderAll();
-  if (rolledAtStart) toast('È il giorno dello stipendio: budget di nuovo pieno');
+  if (rolledAtStart) paydayToast();
 
   // Registrazione dell'app installabile (attiva solo quando è online, in https)
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
